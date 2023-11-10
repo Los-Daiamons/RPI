@@ -1,5 +1,4 @@
 package com.daiamons;
-<<<<<<< HEAD
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -10,12 +9,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.Process;
-=======
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 
->>>>>>> b8aa0aa69a7cec26e39eb8b3ae759adb46cf1ad3
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
@@ -81,7 +78,6 @@ public class RaspberryPiServer extends WebSocketServer {
     public static void main(String[] args) {
         WebSocketServer server = new RaspberryPiServer();
         System.out.println("IP de la WiFi: " + ((RaspberryPiServer) server).getWifiIP());
-<<<<<<< HEAD
         String ip = ""+((RaspberryPiServer) server).getWifiIP();
         server.start();
 
@@ -128,9 +124,7 @@ public class RaspberryPiServer extends WebSocketServer {
 
         // finish
         System.out.println("Comandos finalizados.");
-=======
         server.start();
 
->>>>>>> b8aa0aa69a7cec26e39eb8b3ae759adb46cf1ad3
     }
 }
