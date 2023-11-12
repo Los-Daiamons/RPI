@@ -1,6 +1,14 @@
 {
-    "java.configuration.updateBuildConfiguration": "automatic"
+    "java.configuration.updateBuildConfiguration": "automatic",
+
 }
-{
-    "java.configuration.updateBuildConfiguration": "automatic"
-}
+/*
+"java.home": "/ruta/a/tu/jdk-17",
+"java.configuration.runtimes": [
+    {
+        "name": "JavaSE-17",
+        "path": "/ruta/a/tu/jdk-17",
+        "default": true
+    }
+]
+*/

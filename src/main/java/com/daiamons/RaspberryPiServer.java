@@ -3,15 +3,11 @@ package com.daiamons;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
-import java.util.concurrent.TimeUnit;
-import java.lang.Runtime;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.Process;
-import org.java_websocket.WebSocket;
-import org.java_websocket.handshake.ClientHandshake;
-import org.java_websocket.server.WebSocketServer;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -29,9 +25,22 @@ public class RaspberryPiServer extends WebSocketServer {
 
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
-        // Enviar la IP de la WiFi al cliente cuando se abre la conexión
-        String wifiIP = getWifiIP();
-        conn.send("IP de la WiFi: " + wifiIP);
+        try {
+            // Obtenemos el ID del proceso actual
+            long pid = ProcessHandle.current().pid();
+            
+            // Enviamos la señal de interrupción al proceso actual
+            ProcessBuilder processBuilder = new ProcessBuilder("kill", "-2", String.valueOf(pid));
+            Process process = processBuilder.start();
+            
+            // Esperamos a que el proceso termine
+            int exitCode = process.waitFor();
+            
+            // Imprimimos el código de salida del proceso
+            System.out.println("Código de salida: " + exitCode);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -84,12 +93,13 @@ public class RaspberryPiServer extends WebSocketServer {
         System.out.println("Iniciando comando...");
 
         String directorio = "~/dev/rpi-rgb-led-matrix/";
+        // sudo ./led-matrix -t "Su mensaje aquí"
         String comando = "text-scroller -f ~/dev/bitmap-fonts/bitmap/cherry/cherry-10-b.bdf --led-cols=64 --led-rows=64 --led-slowdown-gpio=4 --led-no-hardware-pulse " + ip;
 
         try {
             // Construye el comando para cambiar de directorio y ejecutar el comando deseado
             String[] cmd = { "/bin/bash", "-c", "cd " + directorio + " && " + comando };
-
+            
             // Objeto ProcessBuilder para construir y configurar el proceso
             ProcessBuilder processBuilder = new ProcessBuilder(cmd);
 
@@ -106,25 +116,13 @@ public class RaspberryPiServer extends WebSocketServer {
                 System.out.println(line);
             }
 
-            // Espera un tiempo (en este caso, 5 segundos)
-            TimeUnit.SECONDS.sleep(5);
 
-            // Destruye el proceso
-            p.destroy();
-
-            // Espera a que el proceso termine
-            p.waitFor();
-
-            // Comprueba el resultado de la ejecución
-            System.out.println("Código de salida del comando: " + p.exitValue());
-
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
         // finish
         System.out.println("Comandos finalizados.");
-        server.start();
 
     }
 }
