@@ -18,45 +18,25 @@ import java.net.SocketException;
 import java.util.Enumeration;
 import java.util.Map;
 
+
+
 public class RaspberryPiServer extends WebSocketServer {
 
     private static final int PORT = 8887;
     private Map<WebSocket, String> connectionNames = new ConcurrentHashMap<>();
-
+    private static Process proc;
+    private static Process mensaje; 
     public RaspberryPiServer() {
         super(new InetSocketAddress(PORT));
     }
-
+    
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
         try {
-            String tipoDispositivo = handshake.getFieldValue("User-Agent");
-            String connectionName = "generateUniqueName()";
 
-            connectionNames.put(conn, connectionName);
-
-            // Enviar un mensaje de conexión al cliente con su nombre
-            conn.send("{\"type\": \"connect\", \"name\": \"" + connectionName + "\"}");
-
-            // Actualizar la cuenta de conexiones
-            updateAndSendConnectionCount();
-
-            /*
-             * long pid = ProcessHandle.current().pid();
-             * 
-             * // Enviamos la señal de interrupción al proceso actual
-             * ProcessBuilder processBuilder = new ProcessBuilder("kill", "-2",
-             * String.valueOf(pid));
-             * Process process = processBuilder.start();
-             * 
-             * // Esperamos a que el proceso termine
-             * int exitCode = process.waitFor();
-             * 
-             * // Imprimimos el código de salida del proceso
-             * System.out.println("Código de salida: " + exitCode);
-             */
+            System.out.println(conn.getResourceDescriptor());
             System.out.println("Nueva conexión: " + conn.getRemoteSocketAddress().getAddress().getHostAddress());
-
+            proc.destroy();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -75,12 +55,21 @@ public class RaspberryPiServer extends WebSocketServer {
     public void onMessage(WebSocket conn, String message) {
         String directorio = "~/dev/rpi-rgb-led-matrix/";
         // sudo ./led-matrix -t "Su mensaje aquí"
-        /* 
-           
-            */ if (message.equals("desktop") || message.equals("mobile")) {
-            generateUniqueName(message);
+        System.out.println(message);
+        if (message.equals("desktop") || message.equals("mobile")) {
+            String connectionName = generateUniqueName(message);
+
+            connectionNames.put(conn, connectionName);
+            conn.send("{\"type\": \"connect\", \"name\": \"" + connectionName + "\"}");
+
+            // Actualizar la cuenta de conexiones
+            updateAndSendConnectionCount();
         } else {
-            String comando = "text-scroller -f ~/dev/bitmap-fonts/bitmap/cherry/cherry-10-b.bdf --led-cols=64 --led-rows=64 --led-slowdown-gpio=4 --led-no-hardware-pulse "
+            if (mensaje != null){
+                mensaje.destroy();
+                }
+
+            String comando = "text-scroller -f ~/dev/bitmap-fonts/bitmap/gomme/Gomme10x20n.bdf --led-cols=64 --led-rows=64 --led-slowdown-gpio=4 --led-no-hardware-pulse "
                     + message;
 
             try {
@@ -94,15 +83,15 @@ public class RaspberryPiServer extends WebSocketServer {
                 processBuilder.redirectErrorStream(true);
 
                 // Inicia el proceso
-                Process p = processBuilder.start();
+                mensaje = processBuilder.start();
 
                 // Lee la salida del proceso en un hilo separado
-                BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(mensaje.getInputStream()));
                 String line;
                 while ((line = reader.readLine()) != null) {
                     System.out.println(line);
                 }
-
+                
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -180,7 +169,7 @@ public class RaspberryPiServer extends WebSocketServer {
 
         String directorio = "~/dev/rpi-rgb-led-matrix/";
         // sudo ./led-matrix -t "Su mensaje aquí"
-        String comando = "text-scroller -f ~/dev/bitmap-fonts/bitmap/cherry/cherry-10-b.bdf --led-cols=64 --led-rows=64 --led-slowdown-gpio=4 --led-no-hardware-pulse "
+        String comando = "text-scroller -f ~/dev/bitmap-fonts/bitmap/gomme/Gomme10x20n.bdf --led-cols=64 --led-rows=64 --led-slowdown-gpio=4 --led-no-hardware-pulse "
                 + ip;
 
         try {
@@ -194,10 +183,10 @@ public class RaspberryPiServer extends WebSocketServer {
             processBuilder.redirectErrorStream(true);
 
             // Inicia el proceso
-            Process p = processBuilder.start();
+            proc = processBuilder.start();
 
             // Lee la salida del proceso en un hilo separado
-            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(proc.getInputStream()));
             String line;
             while ((line = reader.readLine()) != null) {
                 System.out.println(line);
