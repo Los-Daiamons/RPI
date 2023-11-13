@@ -30,7 +30,8 @@ public class RaspberryPiServer extends WebSocketServer {
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
         try {
-            String connectionName = generateUniqueName();
+            String tipoDispositivo = handshake.getFieldValue("User-Agent");
+            String connectionName = "generateUniqueName()";
 
             connectionNames.put(conn, connectionName);
 
@@ -72,7 +73,40 @@ public class RaspberryPiServer extends WebSocketServer {
 
     @Override
     public void onMessage(WebSocket conn, String message) {
-        // Manejar mensajes del cliente si es necesario
+        String directorio = "~/dev/rpi-rgb-led-matrix/";
+        // sudo ./led-matrix -t "Su mensaje aquí"
+        /* 
+           
+            */ if (message.equals("desktop") || message.equals("mobile")) {
+            generateUniqueName(message);
+        } else {
+            String comando = "text-scroller -f ~/dev/bitmap-fonts/bitmap/cherry/cherry-10-b.bdf --led-cols=64 --led-rows=64 --led-slowdown-gpio=4 --led-no-hardware-pulse "
+                    + message;
+
+            try {
+                // Construye el comando para cambiar de directorio y ejecutar el comando deseado
+                String[] cmd = { "/bin/bash", "-c", "cd " + directorio + " && " + comando };
+
+                // Objeto ProcessBuilder para construir y configurar el proceso
+                ProcessBuilder processBuilder = new ProcessBuilder(cmd);
+
+                // Redirige los errores a la salida estándar
+                processBuilder.redirectErrorStream(true);
+
+                // Inicia el proceso
+                Process p = processBuilder.start();
+
+                // Lee la salida del proceso en un hilo separado
+                BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.out.println(line);
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
@@ -106,10 +140,9 @@ public class RaspberryPiServer extends WebSocketServer {
         broadcastt(message);
     }
 
-    private String generateUniqueName() {
-        // TODO Ver si es desktop o mobile de alguna forma
+    private String generateUniqueName(String type) {
 
-        return "desktop_" + System.currentTimeMillis();
+        return type + System.currentTimeMillis();
     }
 
     private void broadcastt(String message) {
