@@ -57,10 +57,6 @@ public class RaspberryPiServer extends WebSocketServer {
         // sudo ./led-matrix -t "Su mensaje aquí"
         System.out.println(message);
 
-        if (mensaje != null) {
-            mensaje.destroy();
-        }
-
         String comando = "text-scroller -f ~/dev/bitmap-fonts/bitmap/gomme/Gomme10x20n.bdf --led-cols=64 --led-rows=64 --led-slowdown-gpio=4 --led-no-hardware-pulse "
                 + message;
 
@@ -71,10 +67,11 @@ public class RaspberryPiServer extends WebSocketServer {
             mensaje = processBuilder.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(mensaje.getInputStream()));
             String line;
+
             while ((line = reader.readLine()) != null) {
                 System.out.println(line);
             }
-
+            mensaje.destroy();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -109,7 +106,6 @@ public class RaspberryPiServer extends WebSocketServer {
                 ", \"desktop_connections\": " + desktopConnections + "}";
         broadcastt(message);
     }
-
 
     private void broadcastt(String message) {
         for (WebSocket client : connectionNames.keySet()) {
