@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.Process;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -18,24 +17,25 @@ import java.net.SocketException;
 import java.util.Enumeration;
 import java.util.Map;
 
-
-
 public class RaspberryPiServer extends WebSocketServer {
 
     private static final int PORT = 8887;
     private Map<WebSocket, String> connectionNames = new ConcurrentHashMap<>();
     private static Process proc;
-    private static Process mensaje; 
+    private static Process mensaje;
+
     public RaspberryPiServer() {
         super(new InetSocketAddress(PORT));
     }
-    
+
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
         try {
 
             System.out.println(conn.getResourceDescriptor());
             System.out.println("Nueva conexión: " + conn.getRemoteSocketAddress().getAddress().getHostAddress());
+            connectionNames.put(conn, conn.getResourceDescriptor());
+            updateAndSendConnectionCount();
             proc.destroy();
         } catch (Exception e) {
             e.printStackTrace();
@@ -56,46 +56,29 @@ public class RaspberryPiServer extends WebSocketServer {
         String directorio = "~/dev/rpi-rgb-led-matrix/";
         // sudo ./led-matrix -t "Su mensaje aquí"
         System.out.println(message);
-        if (message.equals("desktop") || message.equals("mobile")) {
-            String connectionName = generateUniqueName(message);
 
-            connectionNames.put(conn, connectionName);
-            conn.send("{\"type\": \"connect\", \"name\": \"" + connectionName + "\"}");
-
-            // Actualizar la cuenta de conexiones
-            updateAndSendConnectionCount();
-        } else {
-            if (mensaje != null){
-                mensaje.destroy();
-                }
-
-            String comando = "text-scroller -f ~/dev/bitmap-fonts/bitmap/gomme/Gomme10x20n.bdf --led-cols=64 --led-rows=64 --led-slowdown-gpio=4 --led-no-hardware-pulse "
-                    + message;
-
-            try {
-                // Construye el comando para cambiar de directorio y ejecutar el comando deseado
-                String[] cmd = { "/bin/bash", "-c", "cd " + directorio + " && " + comando };
-
-                // Objeto ProcessBuilder para construir y configurar el proceso
-                ProcessBuilder processBuilder = new ProcessBuilder(cmd);
-
-                // Redirige los errores a la salida estándar
-                processBuilder.redirectErrorStream(true);
-
-                // Inicia el proceso
-                mensaje = processBuilder.start();
-
-                // Lee la salida del proceso en un hilo separado
-                BufferedReader reader = new BufferedReader(new InputStreamReader(mensaje.getInputStream()));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    System.out.println(line);
-                }
-                
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        if (mensaje != null) {
+            mensaje.destroy();
         }
+
+        String comando = "text-scroller -f ~/dev/bitmap-fonts/bitmap/gomme/Gomme10x20n.bdf --led-cols=64 --led-rows=64 --led-slowdown-gpio=4 --led-no-hardware-pulse "
+                + message;
+
+        try {
+            String[] cmd = { "/bin/bash", "-c", "cd " + directorio + " && " + comando };
+            ProcessBuilder processBuilder = new ProcessBuilder(cmd);
+            processBuilder.redirectErrorStream(true);
+            mensaje = processBuilder.start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(mensaje.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println(line);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     @Override
@@ -113,26 +96,20 @@ public class RaspberryPiServer extends WebSocketServer {
         int desktopConnections = 0;
 
         for (String name : connectionNames.values()) {
-            if (name.startsWith("mobile")) {
+            if (name.contains("mobile")) {
                 mobileConnections++;
-            } else if (name.startsWith("desktop")) {
+            } else if (name.contains("desktop")) {
                 desktopConnections++;
             }
         }
 
         System.out.println("Conexiones móviles: " + mobileConnections);
         System.out.println("Conexiones de escritorio: " + desktopConnections);
-
-        // Enviar el recuento actualizado a todos los clientes
         String message = "{\"type\": \"connection_count\", \"mobile_connections\": " + mobileConnections +
                 ", \"desktop_connections\": " + desktopConnections + "}";
         broadcastt(message);
     }
 
-    private String generateUniqueName(String type) {
-
-        return type + System.currentTimeMillis();
-    }
 
     private void broadcastt(String message) {
         for (WebSocket client : connectionNames.keySet()) {
