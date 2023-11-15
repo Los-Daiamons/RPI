@@ -56,7 +56,9 @@ public class RaspberryPiServer extends WebSocketServer {
         String directorio = "~/dev/rpi-rgb-led-matrix/";
         // sudo ./led-matrix -t "Su mensaje aquí"
         System.out.println(message);
-
+        if (mensaje != null) {
+            mensaje.destroy();
+        }
         String comando = "text-scroller -f ~/dev/bitmap-fonts/bitmap/gomme/Gomme10x20n.bdf --led-cols=64 --led-rows=64 --led-slowdown-gpio=4 --led-no-hardware-pulse "
                 + message;
 
@@ -66,12 +68,8 @@ public class RaspberryPiServer extends WebSocketServer {
             processBuilder.redirectErrorStream(true);
             mensaje = processBuilder.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(mensaje.getInputStream()));
-            String line;
 
-            while ((line = reader.readLine()) != null) {
-                System.out.println(line);
-            }
-            mensaje.destroy();
+            System.out.println(reader.readLine());
         } catch (IOException e) {
             e.printStackTrace();
         }
