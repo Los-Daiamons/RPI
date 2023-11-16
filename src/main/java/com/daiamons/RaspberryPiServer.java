@@ -16,6 +16,7 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
 import java.util.Map;
+import java.util.Random;
 
 public class RaspberryPiServer extends WebSocketServer {
 
@@ -34,7 +35,15 @@ public class RaspberryPiServer extends WebSocketServer {
 
             System.out.println(conn.getResourceDescriptor());
             System.out.println("Nueva conexión: " + conn.getRemoteSocketAddress().getAddress().getHostAddress());
-            connectionNames.put(conn, conn.getResourceDescriptor());
+            String name = conn.getResourceDescriptor() + "?" + generateRandomCombination();
+            connectionNames.put(conn, name);
+            System.out.println(connectionNames.get(conn));
+            for (Map.Entry<WebSocket, String> entry : connectionNames.entrySet()) {
+                WebSocket webSocket = entry.getKey();
+                String namee = entry.getValue();
+                System.out.println("WebSocket: " + webSocket + ", Name: " + namee);
+            }
+
             updateAndSendConnectionCount();
             proc.destroy();
         } catch (Exception e) {
@@ -91,9 +100,9 @@ public class RaspberryPiServer extends WebSocketServer {
         int desktopConnections = 0;
 
         for (String name : connectionNames.values()) {
-            if (name.contains("mobile")) {
+            if (name.contains("?name=mobile")) {
                 mobileConnections++;
-            } else if (name.contains("desktop")) {
+            } else if (name.contains("?name=desktop")) {
                 desktopConnections++;
             }
         }
@@ -170,5 +179,19 @@ public class RaspberryPiServer extends WebSocketServer {
         // finish
         System.out.println("Comandos finalizados.");
 
+    }
+
+    public static String generateRandomCombination() {
+        String characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        int length = 8;
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            int randomIndex = random.nextInt(characters.length());
+            char randomChar = characters.charAt(randomIndex);
+            sb.append(randomChar);
+        }
+
+        return sb.toString();
     }
 }
