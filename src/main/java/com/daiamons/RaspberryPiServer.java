@@ -43,7 +43,6 @@ public class RaspberryPiServer extends WebSocketServer {
                 String namee = entry.getValue();
                 System.out.println("WebSocket: " + webSocket + ", Name: " + namee);
             }
-
             updateAndSendConnectionCount();
             proc.destroy();
         } catch (Exception e) {
@@ -56,6 +55,7 @@ public class RaspberryPiServer extends WebSocketServer {
         System.out.println("Conexión cerrada");
 
         connectionNames.remove(conn);
+
         updateAndSendConnectionCount();
 
     }
