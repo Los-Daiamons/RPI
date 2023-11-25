@@ -3,6 +3,7 @@ package com.daiamons;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -14,8 +15,12 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Enumeration;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Random;
 
 public class RaspberryPiServer extends WebSocketServer {
@@ -25,14 +30,17 @@ public class RaspberryPiServer extends WebSocketServer {
     private static Process proc;
     private static Process mensaje;
 
+    private HashMap<String, String> users = new HashMap<>();
+
     public RaspberryPiServer() {
         super(new InetSocketAddress(PORT));
+        loadUsers();
+
     }
 
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
         try {
-
             System.out.println(conn.getResourceDescriptor());
             System.out.println("Nueva conexión: " + conn.getRemoteSocketAddress().getAddress().getHostAddress());
             String name = conn.getResourceDescriptor() + "?" + generateRandomCombination();
@@ -62,25 +70,46 @@ public class RaspberryPiServer extends WebSocketServer {
 
     @Override
     public void onMessage(WebSocket conn, String message) {
-        String directorio = "~/dev/rpi-rgb-led-matrix/";
-        // sudo ./led-matrix -t "Su mensaje aquí"
-        System.out.println(message);
-        if (mensaje != null) {
-            mensaje.destroy();
-        }
-        String comando = "text-scroller -f ~/dev/bitmap-fonts/bitmap/gomme/Gomme10x20n.bdf --led-cols=64 --led-rows=64 --led-slowdown-gpio=4 --led-no-hardware-pulse "
-                + message;
 
-        try {
-            String[] cmd = { "/bin/bash", "-c", "cd " + directorio + " && " + comando };
-            ProcessBuilder processBuilder = new ProcessBuilder(cmd);
-            processBuilder.redirectErrorStream(true);
-            mensaje = processBuilder.start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(mensaje.getInputStream()));
+        if (message.startsWith("{\"type\":\"auth\"")) {
+            // Parsear el mensaje de autenticación
+            Map<String, String> authData = parseAuthenticationMessage(message);
 
-            System.out.println(reader.readLine());
-        } catch (IOException e) {
-            e.printStackTrace();
+            // Obtener el nombre de usuario y la contraseña
+            String username = authData.get("username");
+            String password = authData.get("password");
+
+            // Verificar las credenciales
+            if (checkUser(username, password)) {
+                System.out.println("Autenticación exitosa para el usuario: " + username);
+                // Resto del código...
+            } else {
+                System.out.println("Autenticación fallida para el usuario: " + username);
+                conn.close();
+                return;
+            }
+            
+        } else {
+            String directorio = "~/dev/rpi-rgb-led-matrix/";
+            System.out.println(message);
+            if (mensaje != null) {
+                mensaje.destroy();
+            }
+            String comando = "text-scroller -f ~/dev/bitmap-fonts/bitmap/gomme/Gomme10x20n.bdf --led-cols=64 --led-rows=64 --led-slowdown-gpio=4 --led-no-hardware-pulse "
+                    + message;
+
+            try {
+                String[] cmd = { "/bin/bash", "-c", "cd " + directorio + " && " + comando };
+                ProcessBuilder processBuilder = new ProcessBuilder(cmd);
+                processBuilder.redirectErrorStream(true);
+                mensaje = processBuilder.start();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(mensaje.getInputStream()));
+
+                System.out.println(reader.readLine());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
         }
 
     }
@@ -165,12 +194,6 @@ public class RaspberryPiServer extends WebSocketServer {
             // Inicia el proceso
             proc = processBuilder.start();
 
-            // Lee la salida del proceso en un hilo separado
-            BufferedReader reader = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                System.out.println(line);
-            }
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -193,5 +216,39 @@ public class RaspberryPiServer extends WebSocketServer {
         }
 
         return sb.toString();
+    }
+
+    private void loadUsers() {
+        try {
+            // Lee el contenido del archivo JSON
+            Path filePath = Paths.get("./src/main/java/com/daiamons/users.json");
+            String jsonContent = new String(Files.readAllBytes(filePath));
+
+            // Convierte el JSON a un HashMap
+            JSONObject jsonObject = new JSONObject(jsonContent);
+            for (String key : jsonObject.keySet()) {
+                users.put(key, jsonObject.getString(key));
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private boolean checkUser(String user, String pass) {
+        if (users.containsKey(user)) {
+            if (users.get(user).equals(pass)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Map<String, String> parseAuthenticationMessage(String message) {
+        Map<String, String> authData = new HashMap<>();
+        JSONObject json = new JSONObject(message);
+        authData.put("username", json.getString("username"));
+        authData.put("password", json.getString("password"));
+        return authData;
     }
 }

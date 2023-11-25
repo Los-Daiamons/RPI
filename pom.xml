@@ -31,6 +31,11 @@
       <artifactId>Java-WebSocket</artifactId>
       <version>1.5.3</version>
     </dependency>
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>20231013</version>
+  </dependency>
 
   </dependencies>
 
