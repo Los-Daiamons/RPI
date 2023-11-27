@@ -29,6 +29,7 @@ public class RaspberryPiServer extends WebSocketServer {
     private Map<WebSocket, String> connectionNames = new ConcurrentHashMap<>();
     private static Process proc;
     private static Process mensaje;
+    private static String ip;
 
     private HashMap<String, String> users = new HashMap<>();
 
@@ -82,7 +83,6 @@ public class RaspberryPiServer extends WebSocketServer {
             // Verificar las credenciales
             if (checkUser(username, password)) {
                 System.out.println("Autenticación exitosa para el usuario: " + username);
-                // Resto del código...
             } else {
                 System.out.println("Autenticación fallida para el usuario: " + username);
                 conn.close();
@@ -172,37 +172,34 @@ public class RaspberryPiServer extends WebSocketServer {
     public static void main(String[] args) {
         WebSocketServer server = new RaspberryPiServer();
         System.out.println("IP de la WiFi: " + ((RaspberryPiServer) server).getWifiIP());
-        String ip = "" + ((RaspberryPiServer) server).getWifiIP();
+        ip = "" + ((RaspberryPiServer) server).getWifiIP();
         server.start();
 
-        System.out.println("Iniciando comando...");
+        mostrarIP(ip);
 
+        System.out.println("Comandos finalizados.");
+
+    }
+
+    private static void mostrarIP(String ip) {
         String directorio = "~/dev/rpi-rgb-led-matrix/";
         // sudo ./led-matrix -t "Su mensaje aquí"
         String comando = "text-scroller -f ~/dev/bitmap-fonts/bitmap/gomme/Gomme10x20n.bdf --led-cols=64 --led-rows=64 --led-slowdown-gpio=4 --led-no-hardware-pulse "
                 + ip;
 
         try {
-            // Construye el comando para cambiar de directorio y ejecutar el comando deseado
             String[] cmd = { "/bin/bash", "-c", "cd " + directorio + " && " + comando };
 
-            // Objeto ProcessBuilder para construir y configurar el proceso
             ProcessBuilder processBuilder = new ProcessBuilder(cmd);
 
-            // Redirige los errores a la salida estándar
             processBuilder.redirectErrorStream(true);
 
-            // Inicia el proceso
             proc = processBuilder.start();
 
 
         } catch (IOException e) {
             System.out.println("Error al ejecutar el comando inicial");
         }
-
-        // finish
-        System.out.println("Comandos finalizados.");
-
     }
 
     public static String generateRandomCombination() {
