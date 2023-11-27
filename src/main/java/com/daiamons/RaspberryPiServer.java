@@ -107,7 +107,8 @@ public class RaspberryPiServer extends WebSocketServer {
 
                 System.out.println(reader.readLine());
             } catch (IOException e) {
-                e.printStackTrace();
+                //e.printStackTrace();
+                System.out.println("Error al ejecutar el comando para mostrar el mensaje en el display usando el onMessage");
             }
 
         }
@@ -196,7 +197,7 @@ public class RaspberryPiServer extends WebSocketServer {
 
 
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error al ejecutar el comando inicial");
         }
 
         // finish
