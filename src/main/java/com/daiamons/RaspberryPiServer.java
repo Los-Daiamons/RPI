@@ -88,7 +88,7 @@ public class RaspberryPiServer extends WebSocketServer {
                 conn.close();
                 return;
             }
-            
+
         } else {
             String directorio = "~/dev/rpi-rgb-led-matrix/";
             System.out.println(message);
@@ -107,8 +107,9 @@ public class RaspberryPiServer extends WebSocketServer {
 
                 System.out.println(reader.readLine());
             } catch (IOException e) {
-                //e.printStackTrace();
-                System.out.println("Error al ejecutar el comando para mostrar el mensaje en el display usando el onMessage");
+                // e.printStackTrace();
+                System.out.println(
+                        "Error al ejecutar el comando para mostrar el mensaje en el display usando el onMessage");
             }
 
         }
@@ -194,7 +195,6 @@ public class RaspberryPiServer extends WebSocketServer {
 
             // Inicia el proceso
             proc = processBuilder.start();
-
 
         } catch (IOException e) {
             System.out.println("Error al ejecutar el comando inicial");
